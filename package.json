@@ -1,0 +1,13 @@
+{
+  "name": "mp3-player",
+  "version": "1.0.0",
+  "description": "MP3 player with queue and YouTube to MP3 conversion",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "youtube-dl-exec": "^3.0.0"
+  }
+}

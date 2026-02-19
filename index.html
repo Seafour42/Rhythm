@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rhythm</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=Metal+Mania&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --surface-hover: #1e1e1e;
+      --accent: #c41e3a;
+      --accent-hover: #e02545;
+      --text: #e8e6e3;
+      --text-muted: #8b8685;
+      --border: #2a2a2a;
+      --progress: #c41e3a;
+      --progress-bg: #2a2a2a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body, body * {
+      caret-color: transparent;
+    }
+
+    input:not([type="range"]):not([type="file"]),
+    textarea,
+    [contenteditable="true"] {
+      caret-color: auto;
+    }
+
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    h1.app-title {
+      font-family: 'Metal Mania', cursive;
+      font-size: 4rem;
+      font-weight: 400;
+      margin-bottom: 0.25rem;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8)) drop-shadow(0 0 1px #000);
+    }
+
+    .player-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 50vh;
+      margin-top: -5.25rem;
+    }
+
+    .player-container {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 1.5rem;
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .now-playing {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.35rem;
+    }
+
+    .current-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      min-height: 1.4em;
+    }
+
+    .progress-wrap {
+      margin-bottom: 1.25rem;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: var(--progress-bg);
+      border-radius: 3px;
+      cursor: pointer;
+      overflow: hidden;
+      margin-bottom: 0.5rem;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--progress);
+      border-radius: 3px;
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    .time-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+
+    .controls-left,
+    .controls-right {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .controls-left {
+      justify-content: flex-end;
+      padding-right: 0.5rem;
+    }
+
+    .controls-center {
+      flex-shrink: 0;
+    }
+
+    .controls-right {
+      justify-content: flex-start;
+      padding-left: 0.5rem;
+    }
+
+    .volume-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .volume-row .volume-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+
+    .volume-row .volume-icon svg {
+      width: 100%;
+      height: 100%;
+      fill: var(--accent);
+    }
+
+    .volume-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      background: var(--progress-bg);
+      border-radius: 3px;
+      outline: none;
+    }
+
+    .volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      background: var(--accent);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    .volume-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.1);
+    }
+
+    .volume-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      background: var(--accent);
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn {
+      background: #1a1a1a;
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+    }
+
+    .btn:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn-play {
+      width: 72px;
+      height: 72px;
+      font-size: 1.75rem;
+      background: #1a1a1a;
+      border-color: var(--border);
+      color: white;
+      box-shadow: none;
+    }
+
+    .btn-play:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 4px 24px rgba(196, 30, 58, 0.4);
+    }
+
+    .btn-shuffle {
+      font-size: 1rem;
+    }
+
+    .btn-shuffle.active {
+      background: #1a1a1a;
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .btn-shuffle.active:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .queue-section {
+      width: 100%;
+      max-width: 420px;
+      margin-top: 1.5rem;
+    }
+
+    .queue-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+
+    .queue-header h2 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .add-songs {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #1a1a1a;
+      color: white;
+      border: 1px solid var(--border);
+      padding: 0.5rem 1rem;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .add-songs:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .queue-list {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      min-height: 120px;
+    }
+
+    .queue-item {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+      user-select: none;
+      cursor: grab;
+    }
+
+    .queue-item .title-wrap,
+    .queue-item .title-input {
+      user-select: text;
+    }
+
+    .queue-item:last-child {
+      border-bottom: none;
+    }
+
+    .queue-item:hover {
+      background: var(--surface-hover);
+    }
+
+    .queue-item.dragging {
+      opacity: 0.5;
+      cursor: grabbing;
+    }
+
+    .queue-item .title-wrap,
+    .queue-item .title-input {
+      cursor: text;
+      user-select: text;
+    }
+
+    .queue-item.drop-before::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 4px;
+      background: var(--accent);
+      border-radius: 0 0 2px 2px;
+      z-index: 1;
+    }
+
+    .queue-item.playing {
+      background: rgba(196, 30, 58, 0.12);
+      border-left: 3px solid var(--accent);
+    }
+
+    .queue-item .drag-handle {
+      color: var(--text-muted);
+      font-size: 1rem;
+      user-select: none;
+    }
+
+    .queue-item .title-wrap {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .queue-item .title {
+      font-size: 0.9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .queue-item .title-input {
+      flex: 1;
+      min-width: 0;
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      padding: 0.25rem 0.5rem;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+
+    .queue-item .title-input:focus {
+      outline: none;
+    }
+
+    .queue-item .btn-rename {
+      flex-shrink: 0;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.2rem;
+      font-size: 0.85rem;
+      border-radius: 4px;
+    }
+
+    .queue-item .btn-rename:hover {
+      color: var(--accent);
+      background: var(--surface-hover);
+    }
+
+    .queue-item .btn-remove {
+      flex-shrink: 0;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.2rem;
+      font-size: 0.9rem;
+      border-radius: 4px;
+      line-height: 1;
+    }
+
+    .queue-item .btn-remove:hover {
+      color: #e05c5c;
+      background: var(--surface-hover);
+    }
+
+    .queue-item .move-btns {
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    .queue-item .move-btns button {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.25rem;
+      font-size: 0.9rem;
+      border-radius: 4px;
+    }
+
+    .queue-item .move-btns button:hover {
+      color: var(--accent);
+      background: var(--surface-hover);
+    }
+
+    .queue-empty {
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .youtube-section {
+      width: 100%;
+      max-width: 420px;
+      margin-top: 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 1.25rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    .youtube-section h2 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .youtube-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .youtube-row input {
+      width: 100%;
+      min-width: 0;
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.6rem 1rem;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+
+    .youtube-row input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .youtube-row input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .youtube-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .youtube-buttons button {
+      flex: 1;
+      min-width: 0;
+      background: #1a1a1a;
+      color: white;
+      border: 1px solid var(--border);
+      padding: 0.6rem 1rem;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .youtube-buttons button:hover:not(:disabled) {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .youtube-buttons button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .youtube-status {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      min-height: 1.2em;
+    }
+
+    .youtube-status.error {
+      color: #e05c5c;
+    }
+
+    .youtube-status.success {
+      color: #5cb85c;
+    }
+
+    .convert-progress-wrap {
+      display: none;
+      margin-top: 0.75rem;
+    }
+
+    .convert-progress-wrap.visible {
+      display: block;
+    }
+
+    .convert-progress-bar {
+      height: 8px;
+      background: var(--progress-bg);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 0.35rem;
+    }
+
+    .convert-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.15s ease-out;
+    }
+
+    .convert-progress-text {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <h1 class="app-title">Rhythm</h1>
+
+  <div class="player-wrapper">
+  <div class="player-container">
+    <div class="now-playing">Now Playing</div>
+    <div class="current-title" id="currentTitle">—</div>
+
+    <div class="progress-wrap">
+      <div class="progress-bar" id="progressBar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="time-row">
+        <span id="currentTime">0:00</span>
+        <span id="totalTime">0:00</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="controls-left">
+        <button class="btn" id="prevBtn" title="Previous">⏮</button>
+      </div>
+      <div class="controls-center">
+        <button class="btn btn-play" id="playBtn" title="Play / Pause">▶</button>
+      </div>
+      <div class="controls-right">
+        <button class="btn" id="nextBtn" title="Next">⏭</button>
+        <button class="btn btn-shuffle" id="shuffleBtn" title="Shuffle queue">⇅</button>
+      </div>
+    </div>
+
+    <div class="volume-row">
+      <span class="volume-icon" title="Volume"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71V20.77c3.91-.91 7-4.49 7-8.77s-3.09-7.86-7-8.77z"/></svg></span>
+      <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="100" title="Volume">
+    </div>
+  </div>
+  </div>
+
+  <div class="youtube-section">
+    <h2>YouTube to MP3</h2>
+    <div class="youtube-row">
+      <input type="url" id="youtubeUrl" placeholder="Paste YouTube link..." autocomplete="off">
+      <div class="youtube-buttons">
+        <button type="button" id="youtubeAddBtn">Add to Queue</button>
+        <button type="button" id="youtubeConvertBtn">Convert & Download</button>
+      </div>
+    </div>
+    <div class="convert-progress-wrap" id="convertProgressWrap">
+      <div class="convert-progress-bar">
+        <div class="convert-progress-fill" id="convertProgressFill"></div>
+      </div>
+      <div class="convert-progress-text" id="convertProgressText">0%</div>
+    </div>
+    <div class="youtube-status" id="youtubeStatus"></div>
+  </div>
+
+  <div class="queue-section">
+    <div class="queue-header">
+      <h2>Queue</h2>
+      <label class="add-songs">
+        <input type="file" id="fileInput" accept="audio/mpeg,.mp3" multiple>
+        + Add songs
+      </label>
+    </div>
+    <div class="queue-list" id="queueList">
+      <div class="queue-empty" id="queueEmpty">Add MP3 files to get started</div>
+      <div id="queueItems"></div>
+    </div>
+  </div>
+
+  <audio id="audio" preload="metadata"></audio>
+
+  <script>
+    const audio = document.getElementById('audio');
+    const playBtn = document.getElementById('playBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const progressBar = document.getElementById('progressBar');
+    const progressFill = document.getElementById('progressFill');
+    const currentTimeEl = document.getElementById('currentTime');
+    const totalTimeEl = document.getElementById('totalTime');
+    const currentTitleEl = document.getElementById('currentTitle');
+    const fileInput = document.getElementById('fileInput');
+    const queueItemsContainer = document.getElementById('queueItems');
+    const queueEmpty = document.getElementById('queueEmpty');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const youtubeUrl = document.getElementById('youtubeUrl');
+    const youtubeAddBtn = document.getElementById('youtubeAddBtn');
+    const youtubeConvertBtn = document.getElementById('youtubeConvertBtn');
+    const youtubeStatus = document.getElementById('youtubeStatus');
+    const convertProgressWrap = document.getElementById('convertProgressWrap');
+    const convertProgressFill = document.getElementById('convertProgressFill');
+    const convertProgressText = document.getElementById('convertProgressText');
+
+    let queue = [];
+    let currentIndex = -1;
+    let shuffleEnabled = false;
+    let playbackOrder = [];
+
+    const DB_NAME = 'rhythm-db';
+    const STORE_NAME = 'tracks';
+    const STORAGE_KEY_QUEUE = 'rhythm-queue';
+    const STORAGE_KEY_STATE = 'rhythm-state';
+
+    function generateId() {
+      return 't-' + Date.now() + '-' + Math.random().toString(36).slice(2, 11);
+    }
+
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => resolve(req.result);
+        req.onupgradeneeded = (e) => {
+          e.target.result.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        };
+      });
+    }
+
+    function saveBlobToStore(id, blob) {
+      return openDB().then(db => {
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.objectStore(STORE_NAME).put({ id, blob });
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      });
+    }
+
+    function getBlobFromStore(id) {
+      return openDB().then(db => {
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const req = tx.objectStore(STORE_NAME).get(id);
+          req.onsuccess = () => resolve(req.result ? req.result.blob : null);
+          req.onerror = () => reject(req.error);
+        });
+      });
+    }
+
+    function removeBlobFromStore(id) {
+      return openDB().then(db => {
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.objectStore(STORE_NAME).delete(id);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      });
+    }
+
+    function saveQueue() {
+      try {
+        const list = queue.filter(item => item.id).map(({ id, name }) => ({ id, name }));
+        localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(list));
+        const state = { currentIndex, volume: volumeSlider.value };
+        localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(state));
+      } catch (e) {}
+    }
+
+    async function loadQueue() {
+      try {
+        const listJson = localStorage.getItem(STORAGE_KEY_QUEUE);
+        if (!listJson) return;
+        const list = JSON.parse(listJson);
+        const loaded = [];
+        for (const { id, name } of list) {
+          const blob = await getBlobFromStore(id);
+          if (blob) {
+            loaded.push({ id, name, url: URL.createObjectURL(blob) });
+          }
+        }
+        queue.length = 0;
+        queue.push(...loaded);
+        const stateJson = localStorage.getItem(STORAGE_KEY_STATE);
+        if (stateJson) {
+          const state = JSON.parse(stateJson);
+          currentIndex = state.currentIndex >= 0 && state.currentIndex < queue.length ? state.currentIndex : -1;
+          if (state.volume != null) volumeSlider.value = state.volume;
+          audio.volume = volumeSlider.value / 100;
+        }
+      } catch (e) {}
+    }
+
+    function formatTime(seconds) {
+      if (!isFinite(seconds) || isNaN(seconds)) return '0:00';
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function getNextIndex() {
+      if (queue.length === 0) return -1;
+      if (shuffleEnabled && playbackOrder.length > 0) {
+        const idx = playbackOrder.indexOf(currentIndex);
+        if (idx < playbackOrder.length - 1) return playbackOrder[idx + 1];
+        return playbackOrder[0];
+      }
+      return currentIndex < queue.length - 1 ? currentIndex + 1 : 0;
+    }
+
+    function getPrevIndex() {
+      if (queue.length === 0) return -1;
+      if (shuffleEnabled && playbackOrder.length > 0) {
+        const idx = playbackOrder.indexOf(currentIndex);
+        if (idx > 0) return playbackOrder[idx - 1];
+        return playbackOrder[playbackOrder.length - 1];
+      }
+      return currentIndex > 0 ? currentIndex - 1 : queue.length - 1;
+    }
+
+    function buildShuffleOrder() {
+      playbackOrder = queue.map((_, i) => i);
+      for (let i = playbackOrder.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [playbackOrder[i], playbackOrder[j]] = [playbackOrder[j], playbackOrder[i]];
+      }
+    }
+
+    function playTrack(index) {
+      if (index < 0 || index >= queue.length) return;
+      currentIndex = index;
+      const item = queue[currentIndex];
+      audio.src = item.url;
+      audio.load();
+      audio.play().catch(() => {});
+      currentTitleEl.textContent = item.name;
+      renderQueue();
+      updatePlayButton();
+    }
+
+    function updatePlayButton() {
+      playBtn.textContent = audio.paused ? '▶' : '⏸';
+    }
+
+    function renderQueue() {
+      queueEmpty.style.display = queue.length ? 'none' : 'block';
+      queueItemsContainer.innerHTML = queue.map((item, i) => {
+        const isPlaying = i === currentIndex;
+        const id = item.id || ('legacy-' + i);
+        return `
+          <div class="queue-item ${isPlaying ? 'playing' : ''} ${item.dragging ? 'dragging' : ''}" data-index="${i}" data-id="${escapeHtml(id)}" draggable="true">
+            <span class="drag-handle">⋮⋮</span>
+            <div class="title-wrap">
+              <span class="title">${escapeHtml(item.name)}</span>
+              <button type="button" class="btn-rename" title="Rename">✎</button>
+            </div>
+            <div class="move-btns">
+              <button type="button" class="move-up" title="Move up">▲</button>
+              <button type="button" class="move-down" title="Move down">▼</button>
+              <button type="button" class="btn-remove" title="Remove from queue">×</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      let dragFromIndex = -1;
+
+      function clearDropIndicator() {
+        queueItemsContainer.querySelectorAll('.queue-item.drop-before').forEach(n => n.classList.remove('drop-before'));
+      }
+
+      queueItemsContainer.querySelectorAll('.queue-item').forEach(el => {
+        const index = parseInt(el.dataset.index, 10);
+        el.addEventListener('dragstart', (e) => {
+          if (el.querySelector('.title-input')) {
+            e.preventDefault();
+            return;
+          }
+          dragFromIndex = index;
+          e.dataTransfer.setData('text/plain', index);
+          e.dataTransfer.effectAllowed = 'move';
+          el.classList.add('dragging');
+        });
+        el.addEventListener('dragend', () => {
+          el.classList.remove('dragging');
+          clearDropIndicator();
+          dragFromIndex = -1;
+        });
+        el.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          if (dragFromIndex !== -1 && index !== dragFromIndex) {
+            clearDropIndicator();
+            el.classList.add('drop-before');
+          }
+        });
+        el.addEventListener('drop', (e) => {
+          e.preventDefault();
+          clearDropIndicator();
+          const from = parseInt(e.dataTransfer.getData('text/plain'), 10);
+          const to = index;
+          if (from === to) return;
+          const item = queue.splice(from, 1)[0];
+          queue.splice(to, 0, item);
+          let newCurrent = currentIndex;
+          if (currentIndex === from) newCurrent = to;
+          else if (from < currentIndex && to >= currentIndex) newCurrent = currentIndex - 1;
+          else if (from > currentIndex && to <= currentIndex) newCurrent = currentIndex + 1;
+          currentIndex = newCurrent;
+          if (shuffleEnabled) buildShuffleOrder();
+          saveQueue();
+          renderQueue();
+        });
+        el.querySelector('.move-up').addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (index === 0) return;
+          [queue[index - 1], queue[index]] = [queue[index], queue[index - 1]];
+          currentIndex = currentIndex === index ? index - 1 : (currentIndex === index - 1 ? index : currentIndex);
+          if (shuffleEnabled) buildShuffleOrder();
+          saveQueue();
+          renderQueue();
+        });
+        el.querySelector('.move-down').addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (index === queue.length - 1) return;
+          [queue[index], queue[index + 1]] = [queue[index + 1], queue[index]];
+          currentIndex = currentIndex === index ? index + 1 : (currentIndex === index + 1 ? index : currentIndex);
+          if (shuffleEnabled) buildShuffleOrder();
+          saveQueue();
+          renderQueue();
+        });
+        el.querySelector('.btn-remove').addEventListener('click', (e) => {
+          e.stopPropagation();
+          const item = queue[index];
+          if (item.id) removeBlobFromStore(item.id).catch(() => {});
+          queue.splice(index, 1);
+          if (currentIndex === index) {
+            if (queue.length > 0) playTrack(index < queue.length ? index : index - 1);
+            else { currentIndex = -1; currentTitleEl.textContent = '—'; audio.src = ''; updatePlayButton(); }
+          } else if (currentIndex > index) currentIndex--;
+          if (shuffleEnabled) buildShuffleOrder();
+          saveQueue();
+          renderQueue();
+        });
+        el.querySelector('.btn-rename').addEventListener('click', (e) => {
+          e.stopPropagation();
+          const wrap = el.querySelector('.title-wrap');
+          const titleEl = el.querySelector('.title');
+          const btn = el.querySelector('.btn-rename');
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'title-input';
+          input.value = queue[index].name;
+          input.maxLength = 200;
+          titleEl.style.display = 'none';
+          btn.style.display = 'none';
+          wrap.appendChild(input);
+          input.focus();
+          input.select();
+          function finish() {
+            const val = input.value.trim();
+            queue[index].name = val || queue[index].name;
+            input.remove();
+            titleEl.style.display = '';
+            btn.style.display = '';
+            titleEl.textContent = queue[index].name;
+            if (currentIndex === index) currentTitleEl.textContent = queue[index].name;
+            saveQueue();
+          }
+          input.addEventListener('blur', finish);
+          input.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter') { ev.preventDefault(); finish(); }
+            if (ev.key === 'Escape') { input.value = queue[index].name; finish(); }
+          });
+        });
+      });
+    }
+
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    fileInput.addEventListener('change', async () => {
+      const files = Array.from(fileInput.files || []);
+      fileInput.value = '';
+      for (const file of files) {
+        if (!file.type.match(/audio\/mpeg/)) continue;
+        const id = generateId();
+        try {
+          await saveBlobToStore(id, file);
+        } catch (e) { continue; }
+        queue.push({ id, name: file.name.replace(/\.mp3$/i, ''), url: URL.createObjectURL(file) });
+      }
+      if (queue.length && currentIndex === -1) {
+        currentIndex = 0;
+        playTrack(0);
+      } else {
+        if (shuffleEnabled) buildShuffleOrder();
+        renderQueue();
+      }
+      saveQueue();
+    });
+
+    playBtn.addEventListener('click', () => {
+      if (queue.length === 0) return;
+      if (currentIndex === -1) {
+        playTrack(0);
+        return;
+      }
+      if (audio.paused) audio.play();
+      else audio.pause();
+      updatePlayButton();
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (queue.length === 0) return;
+      const next = getNextIndex();
+      if (next !== -1) playTrack(next);
+    });
+
+    prevBtn.addEventListener('click', () => {
+      if (queue.length === 0) return;
+      if (audio.currentTime > 2) {
+        audio.currentTime = 0;
+        return;
+      }
+      const prev = getPrevIndex();
+      if (prev !== -1) playTrack(prev);
+    });
+
+    shuffleBtn.addEventListener('click', () => {
+      shuffleEnabled = !shuffleEnabled;
+      shuffleBtn.classList.toggle('active', shuffleEnabled);
+      if (shuffleEnabled) buildShuffleOrder();
+    });
+
+    progressBar.addEventListener('click', (e) => {
+      if (!audio.duration) return;
+      const rect = progressBar.getBoundingClientRect();
+      const pct = (e.clientX - rect.left) / rect.width;
+      audio.currentTime = pct * audio.duration;
+    });
+
+    audio.addEventListener('timeupdate', () => {
+      const pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+      progressFill.style.width = pct + '%';
+      currentTimeEl.textContent = formatTime(audio.currentTime);
+    });
+
+    audio.addEventListener('loadedmetadata', () => {
+      totalTimeEl.textContent = formatTime(audio.duration);
+    });
+
+    audio.addEventListener('ended', () => {
+      const next = getNextIndex();
+      if (next !== -1 && next !== currentIndex) playTrack(next);
+      else {
+        audio.pause();
+        updatePlayButton();
+      }
+    });
+
+    audio.addEventListener('play', updatePlayButton);
+    audio.addEventListener('pause', updatePlayButton);
+
+    volumeSlider.addEventListener('input', () => {
+      audio.volume = volumeSlider.value / 100;
+    });
+
+    function setYoutubeStatus(msg, type) {
+      youtubeStatus.textContent = msg;
+      youtubeStatus.className = 'youtube-status' + (type ? ' ' + type : '');
+    }
+
+    function showConvertProgress(show) {
+      convertProgressWrap.classList.toggle('visible', !!show);
+      if (!show) {
+        convertProgressFill.style.width = '0%';
+        convertProgressText.textContent = '0%';
+      }
+    }
+
+    function setConvertProgress(pct) {
+      const n = Math.min(100, Math.max(0, pct));
+      convertProgressFill.style.width = n + '%';
+      convertProgressText.textContent = Math.round(n) + '%';
+    }
+
+    async function convertYoutubeAndAddToQueue(downloadToSystem) {
+      const url = youtubeUrl.value.trim();
+      if (!url) {
+        setYoutubeStatus('Enter a YouTube URL.', 'error');
+        return;
+      }
+      const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
+      if (!youtubeRegex.test(url)) {
+        setYoutubeStatus('Please enter a valid YouTube link.', 'error');
+        return;
+      }
+      youtubeAddBtn.disabled = true;
+      youtubeConvertBtn.disabled = true;
+      setYoutubeStatus('Converting…');
+      showConvertProgress(true);
+      setConvertProgress(0);
+
+      const base = (window.location.origin && window.location.origin.startsWith('http'))
+        ? window.location.origin
+        : 'http://localhost:3000';
+
+      try {
+        const res = await fetch(base + '/convert-stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || 'Conversion failed');
+        }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let downloadId = null;
+        let title = 'audio';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.progress != null) setConvertProgress(data.progress);
+                if (data.error) throw new Error(data.error);
+                if (data.done && data.downloadId) {
+                  downloadId = data.downloadId;
+                  if (data.title) title = data.title.replace(/\.mp3$/i, '');
+                }
+              } catch (e) {
+                if (!(e instanceof SyntaxError)) throw e;
+              }
+            }
+          }
+        }
+
+        if (!downloadId) {
+          throw new Error('Conversion failed');
+        }
+
+        const fileRes = await fetch(base + '/download/' + downloadId);
+        if (!fileRes.ok) {
+          const err = await fileRes.json().catch(() => ({}));
+          throw new Error(err.message || 'Download failed');
+        }
+        const blob = await fileRes.blob();
+        const id = generateId();
+        try {
+          await saveBlobToStore(id, blob);
+        } catch (e) {}
+        const objectUrl = URL.createObjectURL(blob);
+        queue.push({ id, name: title, url: objectUrl });
+        if (currentIndex === -1) {
+          currentIndex = 0;
+          playTrack(0);
+        } else {
+          if (shuffleEnabled) buildShuffleOrder();
+          renderQueue();
+        }
+        saveQueue();
+        if (downloadToSystem) {
+          const a = document.createElement('a');
+          a.href = objectUrl;
+          a.download = (title || 'audio') + '.mp3';
+          a.click();
+          setYoutubeStatus('Downloaded and added to queue.', 'success');
+        } else {
+          setYoutubeStatus('Added to queue.', 'success');
+        }
+        youtubeUrl.value = '';
+      } catch (e) {
+        const msg = (e.message === 'Failed to fetch' || e.name === 'TypeError')
+          ? 'Cannot reach server. Run "npm start" in the mp3-player folder, then open http://localhost:3000'
+          : (e.message || 'Conversion failed.');
+        setYoutubeStatus(msg, 'error');
+      }
+
+      showConvertProgress(false);
+      youtubeAddBtn.disabled = false;
+      youtubeConvertBtn.disabled = false;
+    }
+
+    youtubeAddBtn.addEventListener('click', () => convertYoutubeAndAddToQueue(false));
+    youtubeConvertBtn.addEventListener('click', () => convertYoutubeAndAddToQueue(true));
+
+    (async function init() {
+      await loadQueue();
+      renderQueue();
+      if (currentIndex >= 0 && queue[currentIndex]) {
+        currentTitleEl.textContent = queue[currentIndex].name;
+        updatePlayButton();
+      }
+    })();
+  </script>
+</body>
+</html>
