@@ -2,12 +2,78 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const https = require('https');
 const { spawn } = require('child_process');
 const { create: createYoutubeDl, args } = require('youtube-dl-exec');
 const { YOUTUBE_DL_PATH } = require('youtube-dl-exec').constants;
 
 const projectBin = path.join(__dirname, 'bin', 'yt-dlp');
-const ytDlpPath = fs.existsSync(projectBin) ? projectBin : YOUTUBE_DL_PATH;
+const tmpBin = path.join(os.tmpdir(), 'rhythm-yt-dlp');
+const LINUX_ASSET = 'yt-dlp_linux';
+const RELEASE_URL = 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest';
+
+let cachedYtDlpPath = null;
+
+function getYtDlpPathSync() {
+  if (cachedYtDlpPath) return cachedYtDlpPath;
+  if (fs.existsSync(projectBin)) {
+    cachedYtDlpPath = projectBin;
+    return projectBin;
+  }
+  if (fs.existsSync(YOUTUBE_DL_PATH)) {
+    cachedYtDlpPath = YOUTUBE_DL_PATH;
+    return YOUTUBE_DL_PATH;
+  }
+  if (fs.existsSync(tmpBin)) {
+    cachedYtDlpPath = tmpBin;
+    return tmpBin;
+  }
+  return null;
+}
+
+function downloadBinary(url) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { headers: { 'User-Agent': 'Rhythm-MP3-Player' } }, (res) => {
+      if (res.statusCode === 302 || res.statusCode === 301) {
+        return downloadBinary(res.headers.location).then(resolve).catch(reject);
+      }
+      const file = fs.createWriteStream(tmpBin, { mode: 0o755 });
+      res.pipe(file);
+      file.on('finish', () => {
+        file.close(() => {
+          fs.chmod(tmpBin, 0o755, (err) => (err ? reject(err) : resolve()));
+        });
+      });
+      file.on('error', reject);
+    });
+    req.on('error', reject);
+  });
+}
+
+async function ensureYtDlpPath() {
+  const existing = getYtDlpPathSync();
+  if (existing) return existing;
+  if (process.platform === 'win32') {
+    throw new Error('yt-dlp binary not found. Run npm start locally or add bin/yt-dlp.');
+  }
+  const res = await fetch(RELEASE_URL, { headers: { 'User-Agent': 'Rhythm-MP3-Player' } });
+  const release = await res.json();
+  const asset = release.assets && release.assets.find((a) => a.name === LINUX_ASSET);
+  if (!asset || !asset.browser_download_url) {
+    throw new Error('Could not find yt-dlp Linux binary in release');
+  }
+  await downloadBinary(asset.browser_download_url);
+  cachedYtDlpPath = tmpBin;
+  return tmpBin;
+}
+
+async function getYtDlpPath() {
+  const existing = getYtDlpPathSync();
+  if (existing) return existing;
+  return ensureYtDlpPath();
+}
+
+const ytDlpPath = getYtDlpPathSync() || YOUTUBE_DL_PATH;
 const youtubedl = createYoutubeDl(ytDlpPath);
 
 const app = express();
@@ -40,6 +106,14 @@ app.post('/convert', async (req, res) => {
     return res.status(400).json({ message: 'Missing or invalid URL' });
   }
 
+  let binaryPath;
+  try {
+    binaryPath = await getYtDlpPath();
+  } catch (e) {
+    return res.status(503).json({ message: e.message || 'yt-dlp unavailable' });
+  }
+
+  const youtubedlWithPath = createYoutubeDl(binaryPath);
   const outputTemplate = path.join(OUTPUT_DIR, `audio-${Date.now()}`);
   const ffmpegPath = process.env.FFMPEG_PATH || process.env.FFMPEG_LOCATION;
 
@@ -56,14 +130,14 @@ app.post('/convert', async (req, res) => {
 
   try {
     const titleOpts = { ...baseOpts, simulate: true, print: 'title' };
-    const titleResult = await youtubedl(url, titleOpts).catch(() => null);
+    const titleResult = await youtubedlWithPath(url, titleOpts).catch(() => null);
     if (titleResult && typeof titleResult === 'string') {
       const raw = titleResult.trim().split('\n')[0].trim();
       if (raw) title = sanitize(raw);
     }
     if (!title) {
       const dumpOpts = { ...baseOpts, dumpSingleJson: true, noDownload: true };
-      const jsonResult = await youtubedl(url, dumpOpts).catch(() => null);
+      const jsonResult = await youtubedlWithPath(url, dumpOpts).catch(() => null);
       if (jsonResult && typeof jsonResult === 'object' && jsonResult.title) {
         title = sanitize(String(jsonResult.title));
       }
@@ -84,7 +158,7 @@ app.post('/convert', async (req, res) => {
       postprocessorArgs: 'FFmpeg:-threads 0',
     };
 
-    await youtubedl(url, extractOpts).catch((err) => {
+    await youtubedlWithPath(url, extractOpts).catch((err) => {
       throw new Error(err.stderr || err.message || 'Conversion failed');
     });
 
@@ -119,6 +193,14 @@ app.post('/convert-stream', async (req, res) => {
     return res.status(400).json({ message: 'Missing or invalid URL' });
   }
 
+  let binaryPath;
+  try {
+    binaryPath = await getYtDlpPath();
+  } catch (e) {
+    return res.status(503).json({ message: e.message || 'yt-dlp unavailable' });
+  }
+
+  const youtubedlStream = createYoutubeDl(binaryPath);
   const outputTemplate = path.join(OUTPUT_DIR, `audio-${Date.now()}`);
   const ffmpegPath = process.env.FFMPEG_PATH || process.env.FFMPEG_LOCATION;
 
@@ -134,14 +216,14 @@ app.post('/convert-stream', async (req, res) => {
   let title = '';
   try {
     const titleOpts = { ...baseOpts, simulate: true, print: 'title' };
-    const titleResult = await youtubedl(url, titleOpts).catch(() => null);
+    const titleResult = await youtubedlStream(url, titleOpts).catch(() => null);
     if (titleResult && typeof titleResult === 'string') {
       const raw = titleResult.trim().split('\n')[0].trim();
       if (raw) title = sanitize(raw);
     }
     if (!title) {
       const dumpOpts = { ...baseOpts, dumpSingleJson: true, noDownload: true };
-      const jsonResult = await youtubedl(url, dumpOpts).catch(() => null);
+      const jsonResult = await youtubedlStream(url, dumpOpts).catch(() => null);
       if (jsonResult && typeof jsonResult === 'object' && jsonResult.title) {
         title = sanitize(String(jsonResult.title));
       }
@@ -175,7 +257,7 @@ app.post('/convert-stream', async (req, res) => {
   };
 
   const cliArgs = [url, ...args(extractOpts)].filter(Boolean);
-  const child = spawn(ytDlpPath, cliArgs, {
+  const child = spawn(binaryPath, cliArgs, {
     stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
   });
