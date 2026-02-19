@@ -1,14 +1,19 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { spawn } = require('child_process');
-const youtubedl = require('youtube-dl-exec');
-const { args } = require('youtube-dl-exec');
+const { create: createYoutubeDl, args } = require('youtube-dl-exec');
 const { YOUTUBE_DL_PATH } = require('youtube-dl-exec').constants;
+
+const projectBin = path.join(__dirname, 'bin', 'yt-dlp');
+const ytDlpPath = fs.existsSync(projectBin) ? projectBin : YOUTUBE_DL_PATH;
+const youtubedl = createYoutubeDl(ytDlpPath);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const OUTPUT_DIR = path.join(__dirname, 'temp');
+const isVercel = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+const OUTPUT_DIR = isVercel ? path.join(os.tmpdir(), 'rhythm-temp') : path.join(__dirname, 'temp');
 const downloads = new Map(); // downloadId -> { path, title }
 
 app.use(express.json());
@@ -170,7 +175,7 @@ app.post('/convert-stream', async (req, res) => {
   };
 
   const cliArgs = [url, ...args(extractOpts)].filter(Boolean);
-  const child = spawn(YOUTUBE_DL_PATH, cliArgs, {
+  const child = spawn(ytDlpPath, cliArgs, {
     stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
   });
